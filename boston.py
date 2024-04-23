@@ -1,88 +1,36 @@
 import numpy as np
-import matplotlib.pyplot as plt 
-import pandas as pd  
-import seaborn as sns 
-import warnings
-warnings.filterwarnings("ignore")
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import r2_score
-from sklearn.datasets import load_boston
-boston = load_boston()
-df = pd.DataFrame(boston.data, columns=boston.feature_names)
-# print(df.DESCR)
-print(df.head())
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Dense, Flatten
+from sklearn import preprocessing
 
-df['MEDV'] = boston.target
-print(df.head())
+(X_train, Y_train), (X_test, Y_test) = keras.datasets.boston_housing.load_data()
 
-from sklearn.preprocessing import StandardScaler
+print("Training data shape:", X_train.shape)
+print("Test data shape:", X_test.shape)
+print("Train output data shape:", Y_train.shape)
+print("Actual Test output data shape:", Y_test.shape)
 
-X = df.drop('MEDV', axis=1)
+##Normalize the data
 
-y = df['MEDV']
+X_train=preprocessing.normalize(X_train)
+X_test=preprocessing.normalize(X_test)
 
-from sklearn.model_selection import train_test_split
+#Model Building
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-print('Training set shape:', X_train.shape, y_train.shape)
-
-print('Testing set shape:', X_test.shape, y_test.shape)
-from keras.models import Sequential
-
-from keras.layers import Dense, Dropout
-
+X_train[0].shape
 model = Sequential()
-
-model.add(Dense(64, input_dim=13, activation='relu'))
-
-model.add(Dropout(0.2))
-
-model.add(Dense(32, activation='relu'))
-
+model.add(Dense(128,activation='relu',input_shape= X_train[0].shape))
+model.add(Dense(64,activation='relu'))
+model.add(Dense(32,activation='relu'))
 model.add(Dense(1))
 
-print(model.summary())
+model.summary()
 
-model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mean_absolute_error'])
+model.compile(loss='mse',optimizer='rmsprop',metrics=['mae'])
 
-from keras.callbacks import EarlyStopping
+history = model.fit(X_train,Y_train,epochs=100,batch_size=1,verbose=1,validation_data=(X_test,Y_test))
 
-# Train the model
-
-early_stopping = EarlyStopping(monitor='val_loss', patience=5)
-
-history = model.fit(X_train, y_train, validation_split=0.2, epochs=100, batch_size=32, callbacks=[early_stopping])
-
-# Plot the training and validation loss over epochs
-
-import matplotlib.pyplot as plt
-
-plt.plot(history.history['loss'])
-
-plt.plot(history.history['val_loss'])
-
-plt.title('Model Loss')
-
-plt.xlabel('Epochs')
-
-plt.ylabel('Loss')
-
-plt.legend(['Training', 'Validation'])
-
-plt.show()
-
-loss, mae = model.evaluate(X_test, y_test)
-
-
-print('Mean Absolute Error:', mae)
-
-lin_model = LinearRegression()
-lin_model.fit(X_train, y_train)
-
-y_train_predict = lin_model.predict(X_train)
-rmse = (np.sqrt(mean_squared_error(y_train, y_train_predict)))
-print('Root Mean Squared Error is {',rmse,'}')
-r2 = r2_score(y_train, y_train_predict)
-print('R2 score is {}'.format(r2))
+results = model.evaluate(X_test, Y_test)
+print(results)
